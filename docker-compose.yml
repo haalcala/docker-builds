@@ -24,7 +24,16 @@ services:
       retries: 120
     restart: unless-stopped
 
-networks:
+
+    image: mysql-exporter
+    build: ./mysql-exporter
+    container_name: mysql-exporter
+    networks:
+      dockernet:
+        ipv4_address: 192.168.254.207
+    environment:
+      - DATA_SOURCE_NAME=exporter:exporter123456789@(mysql-server:3306)/
+    restart: unless-stoppednetworks:
   dockernet:
     # external: true
     # name: dockernet
