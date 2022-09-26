@@ -1,0 +1,36 @@
+version: "3"
+
+services:
+  mysql-server:
+    image: mysql:8.0.19
+    container_name: mysql-server
+    hostname: mysql-server
+    networks:
+      dockernet:
+        ipv4_address: 192.168.254.200
+    ports:
+      - "127.0.0.1:3306:3306" 
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: bash -c '[ $$(netstat -an | grep LIST | grep tcp | grep "3306 " | wc -l) -gt 0 ] && echo "healthy" || exit 1'
+      interval: 10s
+      timeout: 300s
+      retries: 120
+    restart: unless-stopped
+
+networks:
+  dockernet:
+    # external: true
+    # name: dockernet
+    driver: bridge
+    ipam:
+        driver: default
+        config:
+            - subnet: "192.168.254.0/24"
+              gateway: "192.168.254.1"
