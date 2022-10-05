@@ -24,6 +24,24 @@ services:
       retries: 120
     restart: unless-stopped
 
+  mongodb-server:
+    image: mongo
+    container_name: mongodb-server
+    hostname: mongodb-server
+    networks:
+      dockernet:
+        ipv4_address: 192.168.254.201
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - ./mongodb_data:/data/db
+    # healthcheck:
+    #   test: bash -c '[ $$(netstat -an | grep LIST | grep tcp | grep "27017 " | wc -l) -gt 0 ] && echo "healthy" || exit 1'
+    #   interval: 10s
+    #   timeout: 300s
+    #   retries: 120
+    restart: unless-stopped
+
   mysql-exporter:
     image: mysql-exporter
     build: ./mysql-exporter
