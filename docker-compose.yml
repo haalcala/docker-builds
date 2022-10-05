@@ -53,6 +53,16 @@ services:
       - DATA_SOURCE_NAME=exporter:exporter123456789@(mysql-server:3306)/
     restart: unless-stopped
 
+  redis-svc:
+    image: redis
+    container_name: redis-svc
+    ports:
+      - "127.0.0.1:6379:6379"
+    networks:
+      dockernet:
+        ipv4_address: 192.168.254.106
+    hostname: redis-svc
+    restart: unless-stopped
 networks:
   dockernet:
     # external: true
