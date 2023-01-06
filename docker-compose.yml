@@ -240,6 +240,7 @@ services:
       - /dev/disk/:/dev/disk:ro
     devices:
       - /dev/kmsg
+    privileged: true
     restart: unless-stopped
 
 
