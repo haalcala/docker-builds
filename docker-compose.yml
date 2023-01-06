@@ -10,7 +10,7 @@ services:
     ports:
       - "18080:80"
     networks:
-      mattermost:
+      dockernet:
         ipv4_address: 192.168.254.209
     volumes:
       - ./jaeger/nginx/conf.d:/etc/nginx/conf.d
@@ -39,7 +39,7 @@ services:
       - "9000:9000" 
       - "9443:9443"
     networks: 
-      mattermost:
+      dockernet:
         ipv4_address: 192.168.254.107
     restart: unless-stopped
     volumes:
@@ -56,7 +56,7 @@ services:
     ports:
       - "9090:9090"
     networks: 
-      mattermost:
+      dockernet:
         ipv4_address: 192.168.254.105
     volumes:
       - ./prometheus:/etc/prometheus
@@ -68,7 +68,7 @@ services:
     build: ./prometheus_operator
     container_name: prometheus_operator
     networks: 
-      mattermost:
+      dockernet:
         ipv4_address: 192.168.254.106
     volumes:
       - ./prometheus/etc/prometheus:/etc/prometheus
@@ -86,7 +86,7 @@ services:
     hostname: filebeat
     container_name: filebeat
     networks:
-      mattermost:
+      dockernet:
         ipv4_address: 192.168.254.108
     command:
       - filebeat
@@ -105,7 +105,7 @@ services:
     build: ./filebeat_operator
     container_name: filebeat_operator
     networks: 
-      mattermost:
+      dockernet:
         ipv4_address: 192.168.254.109
     volumes:
       - ./filebeat/filebeat.yml:/etc/filebeat/filebeat.yml
@@ -128,7 +128,7 @@ services:
     ports:
       - "3000:3000"
     networks: 
-      mattermost:
+      dockernet:
         ipv4_address: 192.168.254.104
     volumes:
       - grafana-data:/var/lib/grafana
@@ -150,7 +150,7 @@ services:
       - ./grafana:/app
       - ./data/.env:/app/.env
     networks: 
-      mattermost:
+      dockernet:
         ipv4_address: 192.168.254.109
     command:
       - /bin/bash
@@ -167,7 +167,7 @@ services:
     build: ./envoyproxy_operator
     container_name: envoyproxy_operator
     networks: 
-      mattermost:
+      dockernet:
         ipv4_address: 192.168.254.209
     volumes:
       - ./envoy-proxy/etc/envoy:/etc/envoy
@@ -191,7 +191,7 @@ services:
       - "18066:18066"
       - "13306:13306"
     networks:
-      mattermost:
+      dockernet:
         ipv4_address: 192.168.254.210
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -213,7 +213,7 @@ services:
     volumes:
       - '/:/host:ro,rslave'
     networks: 
-      mattermost:
+      dockernet:
         ipv4_address: 192.168.254.103
 
   cadvisor:
@@ -222,7 +222,7 @@ services:
     # ports:
     #   - "8080:8080"
     networks: 
-      mattermost:
+      dockernet:
         ipv4_address: 192.168.254.102
     volumes:
       - /:/rootfs:ro
@@ -247,7 +247,7 @@ services:
       - "14268:14268"
       - "14269:14269"
     networks:
-      mattermost:
+      dockernet:
         ipv4_address: 192.168.254.212
     environment:
       - SPAN_STORAGE_TYPE=elasticsearch
@@ -269,7 +269,7 @@ services:
       - "16686:16686"
       - "16687:16687"
     networks:
-      mattermost:
+      dockernet:
         ipv4_address: 192.168.254.213
     environment:
       - SPAN_STORAGE_TYPE=elasticsearch
@@ -307,7 +307,7 @@ services:
     volumes:
       - ./elasticsearch_data:/usr/share/elasticsearch/data
     networks:
-      mattermost:
+      dockernet:
         ipv4_address: 192.168.254.211
     restart: unless-stopped
     # mem_limit: 1073741824
