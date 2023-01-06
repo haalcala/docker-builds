@@ -1,6 +1,38 @@
 version: "3"
 
 services:
+  prometheus:
+    image: prom/prometheus:latest
+    # build: ./prometheus
+    container_name: prometheus
+    hostname: prometheus
+    ports:
+      - "9090:9090"
+    networks: 
+      mattermost:
+        ipv4_address: 192.168.254.105
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - ./prometheus-data:/prometheus
+    restart: unless-stopped
+
+  prometheus_operator:
+    # image: prom/prometheus:latest
+    build: ./prometheus_operator
+    container_name: prometheus_operator
+    networks: 
+      mattermost:
+        ipv4_address: 192.168.254.106
+    volumes:
+      - ./prometheus/etc/prometheus:/etc/prometheus
+      - ./prometheus_operator:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - aws_access_key_id=${AWS_ADMIN_ACCESS_KEY}
+      - aws_secret_access_key=${AWS_ADMIN_SECRET_KEY}
+      - REGION=${REGION}
+    restart: unless-stopped
+
   mysql-server:
     image: mysql:8.0.19
     container_name: mysql-server
@@ -63,6 +95,7 @@ services:
         ipv4_address: 192.168.254.106
     hostname: redis-svc
     restart: unless-stopped
+
 networks:
   dockernet:
     # external: true
