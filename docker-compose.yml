@@ -1,6 +1,53 @@
 version: "3"
 
 services:
+  nginx:
+    depends_on:
+      jaeger-query:
+        condition: service_healthy
+    image: nginx
+    container_name: nginx
+    ports:
+      - "18080:80"
+    networks:
+      mattermost:
+        ipv4_address: 192.168.254.209
+    volumes:
+      - ./jaeger/nginx/conf.d:/etc/nginx/conf.d
+    # command:
+    #   - /bin/bash
+    #   - -c
+    #   - |
+    #     apt-get update
+    #     apt-get install -y curl
+
+    #     /usr/sbin/nginx
+    healthcheck:
+      test: bash -c '[ $$(curl -s -o /dev/null -w "%{http_code}" http://localhost) -eq 401 ] && echo "up" || exit 1'
+      interval: 10s
+      timeout: 10s
+      retries: 120
+    restart: unless-stopped
+
+
+  portainer:
+    # image: portainer/portainer-ce:2.11.1
+    image: portainer/portainer-ce
+    container_name: portainer
+    command: --admin-password-file=/app/portainer_password
+    ports: 
+      - "9000:9000" 
+      - "9443:9443"
+    networks: 
+      mattermost:
+        ipv4_address: 192.168.254.107
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+      - ./portainer:/app
+
+
   prometheus:
     image: prom/prometheus:latest
     # build: ./prometheus
@@ -33,6 +80,248 @@ services:
       - REGION=${REGION}
     restart: unless-stopped
 
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:7.8.1
+    hostname: filebeat
+    container_name: filebeat
+    networks:
+      mattermost:
+        ipv4_address: 192.168.254.108
+    command:
+      - filebeat
+      - --strict.perms=false
+    environment:
+      - setup.kibana.host=kibana:5601
+      # - output.elasticsearch.hosts=["${JUMP_SERVER_LOCAL_IP}:9200"]
+    volumes:
+      - "./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro"
+      #- "/var/lib/docker/containers:/var/lib/docker/containers:ro"
+      #- "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./mattermost_logs:/mattermost_logs"
+      - "./filebeat_logs:/var/log"
+
+  filebeat_operator:
+    build: ./filebeat_operator
+    container_name: filebeat_operator
+    networks: 
+      mattermost:
+        ipv4_address: 192.168.254.109
+    volumes:
+      - ./filebeat/filebeat.yml:/etc/filebeat/filebeat.yml
+      - ./envoy-proxy/etc/envoy:/etc/envoy
+      - ./filebeat_operator:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data/.env:/app/.env
+      - ./.aws:/home/mattermost/.aws
+    environment:
+      - aws_access_key_id=${AWS_ADMIN_ACCESS_KEY}
+      - aws_secret_access_key=${AWS_ADMIN_SECRET_KEY}
+      - REGION=${REGION}
+    restart: unless-stopped
+
+
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: grafana
+    hostname: grafana
+    ports:
+      - "3000:3000"
+    networks: 
+      mattermost:
+        ipv4_address: 192.168.254.104
+    volumes:
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASS}
+    # healthcheck:
+    #   test: curl --fail http://localhost:3000 || exit 1
+    #   interval: 10s
+    #   timeout: 10s
+    #   retries: 120
+    restart: unless-stopped
+
+  grafana_dashboard:
+    depends_on:
+      - grafana
+    image: python:3.10
+    volumes:
+      - ./grafana:/app
+      - ./data/.env:/app/.env
+    networks: 
+      mattermost:
+        ipv4_address: 192.168.254.109
+    command:
+      - /bin/bash
+      - -c
+      - |
+        cd /app
+
+        pip install -r requirements.txt
+
+        python sync_dashboard_info.py .env
+
+
+  envoyproxy_operator:
+    build: ./envoyproxy_operator
+    container_name: envoyproxy_operator
+    networks: 
+      mattermost:
+        ipv4_address: 192.168.254.209
+    volumes:
+      - ./envoy-proxy/etc/envoy:/etc/envoy
+      - ./envoyproxy_operator:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data/.env:/app/.env
+      - ./.aws:/home/mattermost/.aws
+    environment:
+      - aws_access_key_id=${AWS_ADMIN_ACCESS_KEY}
+      - aws_secret_access_key=${AWS_ADMIN_SECRET_KEY}
+      - REGION=${REGION}
+    restart: unless-stopped
+
+  envoy-proxy:
+    # image: my-envoy-proxy
+    container_name: envoy-proxy
+    build: ./envoy-proxy
+    ports:
+      - "8081:8081"
+      - "18065:18065"
+      - "18066:18066"
+      - "13306:13306"
+    networks:
+      mattermost:
+        ipv4_address: 192.168.254.210
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./envoy-proxy/etc/envoy:/etc/envoy
+    command:
+      - envoy
+      - -c /etc/envoy/envoy.yaml
+      - --service-cluster ${MAIN_STACK_NAME}
+    restart: unless-stopped
+
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    container_name: node_exporter
+    command:
+      - '--path.rootfs=/host'
+    pid: host
+    restart: unless-stopped
+    volumes:
+      - '/:/host:ro,rslave'
+    networks: 
+      mattermost:
+        ipv4_address: 192.168.254.103
+
+  cadvisor:
+    image: google/cadvisor:latest
+    container_name: cadvisor
+    # ports:
+    #   - "8080:8080"
+    networks: 
+      mattermost:
+        ipv4_address: 192.168.254.102
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+    restart: unless-stopped
+
+
+  jaeger-collector:
+    depends_on:
+      es01:
+        condition: service_healthy
+    image: jaegertracing/jaeger-collector:1.36
+    container_name: jaeger-collector
+    ports:
+      - "9411:9411"
+      - "14250:14250"
+      - "14268:14268"
+      - "14269:14269"
+    networks:
+      mattermost:
+        ipv4_address: 192.168.254.212
+    environment:
+      - SPAN_STORAGE_TYPE=elasticsearch
+      - ES_SERVER_URLS=http://es01:9200
+      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
+    command:
+      - --log-level=debug
+    restart: unless-stopped
+
+
+  jaeger-query:
+    depends_on:
+      es01:
+        condition: service_healthy
+    image: jaegertracing/jaeger-query:1.36
+    container_name: jaeger-query
+    ports:
+      - "16685:16685"
+      - "16686:16686"
+      - "16687:16687"
+    networks:
+      mattermost:
+        ipv4_address: 192.168.254.213
+    environment:
+      - SPAN_STORAGE_TYPE=elasticsearch
+      - ES_SERVER_URLS=http://es01:9200
+    # command:
+    #   - /bin/busybox
+    #   - sh
+    #   - -c
+    #   - |
+    #     apk update
+    #     apk add curl
+    #     apk add bash
+        
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:16686/ || exit 1
+      interval: 10s
+      timeout: 10s
+      retries: 120
+    restart: unless-stopped
+
+
+
+  es01:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.6
+    container_name: es01
+    hostname: es01
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - "discovery.type=single-node"
+      - "ES_JAVA_OPTS=-Xms1g -Xmx2g"
+      - ELASTIC_PASSWORD=changeme2192
+      - cluster.name=my-es-cluster
+    volumes:
+      - ./elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      mattermost:
+        ipv4_address: 192.168.254.211
+    restart: unless-stopped
+    # mem_limit: 1073741824
+    # ulimits:
+    #   memlock:
+    #     soft: -1
+    #     hard: -1
+    healthcheck:
+      test: curl --fail http://localhost:9200 || exit 1
+      interval: 10s
+      timeout: 10s
+      retries: 120
+
+
   mysql-server:
     image: mysql:8.0.19
     container_name: mysql-server
@@ -55,6 +344,7 @@ services:
       timeout: 300s
       retries: 120
     restart: unless-stopped
+
 
   mongodb-server:
     image: mongo
@@ -85,6 +375,7 @@ services:
       - DATA_SOURCE_NAME=exporter:exporter123456789@(mysql-server:3306)/
     restart: unless-stopped
 
+
   redis-svc:
     image: redis
     container_name: redis-svc
@@ -95,6 +386,7 @@ services:
         ipv4_address: 192.168.254.106
     hostname: redis-svc
     restart: unless-stopped
+
 
 networks:
   dockernet:
