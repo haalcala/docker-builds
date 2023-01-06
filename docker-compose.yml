@@ -181,6 +181,7 @@ services:
       - REGION=${REGION}
     restart: unless-stopped
 
+
   envoy-proxy:
     # image: my-envoy-proxy
     container_name: envoy-proxy
@@ -215,6 +216,7 @@ services:
     networks: 
       dockernet:
         ipv4_address: 192.168.254.103
+
 
   cadvisor:
     image: google/cadvisor:latest
