@@ -17,19 +17,23 @@ scrape_configs:
       - targets: ['localhost:9090']
 
   # Example job for node_exporter
-  - job_name: 'node_exporter'
-    static_configs:
-      - targets: ['node_exporter:9100']
+  # - job_name: 'node_exporter'
+  #   scrape_interval: 5s
+  #   static_configs:
+  #     - targets: ['node_exporter:9100']
 
   # Example job for cadvisor
-  - job_name: 'cadvisor'
-    static_configs:
-      - targets: ['cadvisor:8080']
+  # - job_name: 'cadvisor'
+  #   scrape_interval: 5s
+  #   static_configs:
+  #     - targets: ['cadvisor:8080']
 
-  - job_name: 'mysql-exporter'
-    static_configs:
-      - targets: ['mysql-exporter:9104']
+  # - job_name: 'mysql-exporter'
+  #   scrape_interval: 5s
+  #   static_configs:
+  #     - targets: ['mysql-exporter:9104']
 
   - job_name: 'test-app-1'
+    scrape_interval: 5s
     static_configs:
       - targets: ['host.docker.internal:2112']

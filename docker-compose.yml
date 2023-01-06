@@ -1,5 +1,9 @@
 version: "3"
 
+volumes:
+  prometheus-data:
+    driver: local
+
 services:
   nginx:
     depends_on:
@@ -62,7 +66,7 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - ./prometheus:/etc/prometheus
-      - ./prometheus-data:/prometheus
+      - prometheus-data:/prometheus
     restart: unless-stopped
 
   prometheus_operator:
