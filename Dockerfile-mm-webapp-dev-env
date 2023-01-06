@@ -1,0 +1,26 @@
+# USAGE:
+#   docker build tmp -t haalcala/mm-webapp-dev-env
+#   docker run --rm -it -v $(pwd):/app haalcala/mm-webapp-dev-env
+
+FROM ubuntu:16.04
+
+RUN apt-get update; apt-get upgrade -y
+
+RUN apt-get install -y build-essential curl wget jq vim sudo git
+
+ENV VERSION=v16.18.1
+ENV DISTRO=linux-x64
+ENV PATH=/usr/local/lib/nodejs/node-$VERSION-$DISTRO/bin:$PATH
+
+RUN curl -O https://nodejs.org/download/release/$VERSION/node-$VERSION-$DISTRO.tar.gz
+
+RUN mkdir -p /usr/local/lib/nodejs
+RUN tar -xvf node-$VERSION-$DISTRO.tar.gz -C /usr/local/lib/nodejs 
+
+RUN groupadd developer -g 1001
+RUN useradd -rm -d /home/developer -s /bin/bash -g developer -G developer -u 1001 developer
+RUN echo "developer ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+USER developer
+
+ENTRYPOINT ["/bin/bash"]
