@@ -1,0 +1,56 @@
+version: 1
+
+prometheus_operator:
+  check_interval: 10
+aws:
+  region: 
+  credentials:
+      aws_access_key_id: ""
+      aws_secret_access_key: ""
+  infra:
+      LoadBalancerArn: 
+docker:
+  parent_compose_file: docker-compose.yml
+  workdir: "./"
+  container_name: prometheus
+  docker_compose_template:
+    version: 3
+    services:
+      prometheus:
+        networks:
+          mattermost:
+            ipv4_address: ""
+prometheus:
+    output_file: /etc/prometheus/prometheus.yml
+    base_config:
+      global:
+        scrape_interval:     15s # By default, scrape targets every 15 seconds.
+
+        # Attach these labels to any time series or alerts when communicating with
+        # external systems (federation, remote storage, Alertmanager).
+        external_labels:
+          monitor: 'localhost'
+
+      # A scrape configuration containing exactly one endpoint to scrape:
+      # Here it's Prometheus itself.
+      scrape_configs:
+        # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+        - job_name: 'prometheus'
+          # Override the global default and scrape targets from this job every 5 seconds.
+          scrape_interval: 5s
+          static_configs:
+            - targets: ['localhost:9090']
+
+        # Example job for node_exporter
+        - job_name: 'node_exporter'
+          static_configs:
+            - targets: ['node_exporter:9100']
+
+        # Example job for cadvisor
+        - job_name: 'cadvisor'
+          static_configs:
+            - targets: ['cadvisor:8080']
+
+        - job_name: 'mysql-exporter'
+          static_configs:
+            - targets: ['mysql-exporter:9104']        
