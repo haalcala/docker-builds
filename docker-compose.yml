@@ -44,7 +44,7 @@ services:
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - portainer_data:/data
+      - ./portainer_data:/data
       - ./portainer:/app
 
 
@@ -58,6 +58,8 @@ services:
     networks: 
       dockernet:
         ipv4_address: 192.168.254.105
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./prometheus:/etc/prometheus
       - ./prometheus-data:/prometheus
@@ -131,7 +133,7 @@ services:
       dockernet:
         ipv4_address: 192.168.254.104
     volumes:
-      - grafana-data:/var/lib/grafana
+      - ./grafana-data:/var/lib/grafana
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_USER}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASS}
