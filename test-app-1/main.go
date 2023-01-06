@@ -45,7 +45,7 @@ func main() {
 	// Prometheus endpoint
 	router.Path("/metrics").Handler(promhttp.Handler())
 
-	fmt.Println("Serving requests on port 9000")
-	err := http.ListenAndServe(":9000", router)
+	fmt.Println("Serving requests on port 2112")
+	err := http.ListenAndServe(":2112", router)
 	log.Fatal(err)
 }
