@@ -2,10 +2,15 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
+	"flag"
 	"fmt"
 	"os"
+	"os/signal"
 	"strconv"
+	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/hashicorp/memberlist"
@@ -293,6 +298,27 @@ func (s *SimpleCluster) startWithPort(hostname string, port int) (*eventDelegate
 }
 
 func main() {
+	var bind_address string
+	var initial_seed string
+	var bind_port int
+
+	flag.StringVar(&bind_address, "b", "", "Default bind_address: root")
+	flag.StringVar(&initial_seed, "s", "", "Default initial_seed: mysql")
+
+	flag.Parse()
+
+	fmt.Println("bind_address:", bind_address)
+	fmt.Println("initial_seed:", initial_seed)
+
+	if bind_address != "" && initial_seed != "" {
+		fmt.Println("MySQL>")
+	} else {
+		fmt.Println(errors.New("bind_address (-b) and initial_seed (-s) are required"))
+
+		return
+	}
+
+	_bind_address := strings.Split(bind_address, ":")
 
 	start_time := time.Now().Unix()
 
@@ -319,10 +345,12 @@ func main() {
 		// IPAddress: ip.String(),
 	}
 
-	bind_port, err := strconv.Atoi(os.Getenv("TEST_APP_2_BIND_PORT"))
+	if len(_bind_address) > 1 {
+		bind_port, err = strconv.Atoi(_bind_address[1])
 
-	if err != nil {
-		panic(err)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	eventDelegate, m, err := s.startWithPort(clusterInfo.Id, bind_port)
@@ -341,4 +369,24 @@ func main() {
 
 	clusterInfo.IPAddress = this_node.Address()
 
+	m.Join([]string{initial_seed})
+
+	// Create a channel to listen for exit signals
+	stop := make(chan os.Signal, 1)
+
+	// Register the signals we want to be notified, these 3 indicate exit
+	// signals, similar to CTRL+C
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+
+	<-stop
+
+	fmt.Println("Stopping!")
+
+	m.Shutdown()
+
+	// Leave the cluster with a 5 second timeout. If leaving takes more than 5
+	// seconds we return.
+	if err := m.Leave(time.Second * 5); err != nil {
+		panic(err)
+	}
 }

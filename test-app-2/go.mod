@@ -20,6 +20,4 @@ require (
 	golang.org/x/sys v0.0.0-20220728004956-3c1f35247d10 // indirect
 )
 
-require test-app-2.example.com v0.0.0
-
-replace test-app-2.example.com => ./
+// replace test-app-2.example.com => ./
