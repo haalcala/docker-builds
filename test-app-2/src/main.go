@@ -380,13 +380,20 @@ func main() {
 
 	<-stop
 
-	fmt.Println("Stopping!")
-
-	m.Shutdown()
+	fmt.Println("Stopping!!!!")
+	fmt.Println("Stopping!!!!")
+	fmt.Println("Stopping!!!!")
+	fmt.Println("Stopping!!!!")
+	fmt.Println("Stopping!!!!")
+	fmt.Println("Stopping!!!!")
+	fmt.Println("Stopping!!!!")
+	fmt.Println("Stopping!!!!")
 
 	// Leave the cluster with a 5 second timeout. If leaving takes more than 5
 	// seconds we return.
 	if err := m.Leave(time.Second * 5); err != nil {
 		panic(err)
 	}
+
+	m.Shutdown()
 }
