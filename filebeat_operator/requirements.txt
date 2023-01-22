@@ -1,0 +1,4 @@
+boto3
+rich
+pyyaml
+python_dotenv

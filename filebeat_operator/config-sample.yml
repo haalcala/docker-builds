@@ -1,0 +1,148 @@
+version: 1
+
+filebeat_operator:
+  check_interval: 300
+aws:
+  region: ""
+  credentials:
+    aws_access_key_id: ""
+    aws_secret_access_key: ""
+  target:
+    resources:
+      - type: target_group
+        conditions:
+        - VpcId: 
+          TargetGroupName: 
+            regex: 
+
+
+docker:
+  container_name: filebeat
+
+filebeat:
+  output_file: /etc/filebeat/filebeat.yml
+  base_config:
+    logging.level: debug
+    logging.to_files: true
+    logging.files:
+      path: /var/log/filebeat
+      name: filebeat
+      keepfiles: 7
+      permissions: 0640
+
+    filebeat.inputs:
+      - type: log
+        paths:
+          - /mattermost_logs/mattermost.log
+        keys_under_root: true
+        processors:
+          - decode_json_fields:
+              fields: ["message"]
+              process_array: false
+              max_depth: 1
+              target: ""
+          - timestamp:
+              field: "timestamp"
+              layouts:
+                - "2006-01-02T15:04:05Z"
+                - "2006-01-02 15:04:05.999 Z"
+                - "2006-01-02T15:04:05.999-07:00"
+              test:
+                - "2019-06-22T16:33:51Z"
+                - "2019-11-18 04:59:51.123 Z"
+                - "2020-08-03T07:10:20.123456+02:00"
+          - drop_fields:
+              fields: [timestamp]
+          - rename:
+              fields:
+                - from: "source"
+                  to: "event_source"
+                - from: "url"
+                  to: "api_url"
+                - from: "error"
+                  to: "error_msg"
+              ignore_missing: true
+          - script:
+              lang: javascript
+              source: >
+                function process(event) {
+                  ["api_url", "path"].map(function(target_url) {
+                
+                    var url = event.Get(target_url)
+                
+                    if (url) {  
+                      var match = true
+                
+                      while (match)   {
+                        var regex =   /(.*\/)(?:(?:([a-zA-Z]*)\/([a-zA-Z0-9_\-]{26,99})(.*))|(?:[a-zA-Z0-9\-_]*(\.[a-zA-Z0-9]{3}$))|(?:(name|reactions)\/([a-zA-Z0-9\-_]+)))/gm
+                
+                        match = regex.exec(url)
+                
+                        if (match) {
+                            var g0 = match[0] // /api/v4/
+                            var g1 = match[1] // users/
+                            var g2 = match[2] // 98as6fd98s7af9sadf8798a6s9fd7sa6df
+                            var g3 = match[3] 
+                            var g4 = match[4]
+                            var g5 = match[5] // name|reaction
+                            var g6 = match[6] // as9df76a9s78df6
+                            var g7 = match[7] // .*
+                
+                            if (g2) {
+                              var token = ((g2[g2.length - 1]=='s' ? g2.substring(0, g2.length - 1) : g2) + "Id");
+                
+                              event.Put(token, g3);
+                
+                              g2 = (g2 + "/{" + token + "}");
+                            }  
+                                            
+                            g5 = g5 ? "{filename}" +  g5 : ""
+                
+                            if (g6) {
+                              event.Put(g6, g7)
+                            }
+                        
+                            g7 = g7 ? g5 + "/{" + g6 + "}" : ""
+                
+                            url = (g1 ? g1 : '') + (g2 ? g2 : '') + (g4 ? g4 : '') + (g5 ? g5 : '') + (g7 ? g7 : '')
+                        }
+                      }
+                      
+                      event.Put(target_url + "_group", url);
+                    }
+                  })
+                }
+
+
+        #json.keys_under_root: true
+        #json.overwrite_keys: true
+        #json.add_error_key: true
+        #json.expand_keys: true
+
+        # Change to true to enable this input configuration.
+        enabled: true
+
+    #filebeat.config:
+    #  modules:
+    #    path: ${path.config}/modules.d/*.yml
+    #    reload.enabled: false
+
+    #filebeat.autodiscover:
+    #  providers:
+    #    - type: docker
+    #      hints.enabled: true
+
+    #processors:
+    #- add_cloud_metadata: ~
+
+    output.elasticsearch:
+      hosts: "${ELASTICSEARCH_HOSTS:es01:9200}"
+      username: "${ELASTICSEARCH_USERNAME:}"
+      password: "${ELASTICSEARCH_PASSWORD:}"
+      indices:
+        - index: "mattermost-log-%{+yyyy.MM.dd-hh}"
+          when.contains:
+            log.file.path: "mattermost.log"
+
+    setup.template.name: "mattermost-log"
+    setup.template.pattern: "mattermost-log-*"
