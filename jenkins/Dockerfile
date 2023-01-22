@@ -1,0 +1,98 @@
+FROM ubuntu:20.04
+
+ENV NVM_DIR /opt/.nvm
+ENV NODE_VERSION 10.19.0
+ENV HOME /var/jenkins_home
+ENV JENKINS_HOME /var/jenkins_home
+
+RUN echo NVM_DIR $NVM_DIR
+
+USER root
+
+RUN apt update
+
+RUN apt install -y make \
+        net-tools \
+        iputils-ping \
+        jq \
+        curl \
+        wget \
+        zip \
+        unzip \
+        python \
+        sudo \
+        dialog \
+        build-essential \
+        apt-transport-https \
+        ca-certificates \
+        gnupg-agent \
+        software-properties-common \
+        docker.io \
+        python3.8 \
+        python3-pip \
+        libpython3.8-dev \
+        net-tools \
+        vim \
+        libssl-dev \
+        libffi-dev \
+        python3-dev
+
+
+RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add -
+
+RUN add-apt-repository \
+   "deb [arch=amd64] https://download.docker.com/linux/debian \
+   $(lsb_release -cs) \
+   stable"
+
+RUN apt-get update
+
+RUN apt-get install -y docker-ce docker-ce-cli containerd.io
+
+
+RUN wget https://dl.google.com/go/go1.13.8.linux-amd64.tar.gz
+
+RUN tar -C /usr/local -xzf go1.13.8.linux-amd64.tar.gz
+
+RUN echo 'export PATH=$PATH:/usr/local/go/bin' >> /etc/bash.bashrc
+
+RUN curl --silent --location "https://github.com/weaveworks/eksctl/releases/download/latest_release/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+
+RUN mv /tmp/eksctl /usr/local/bin
+
+RUN curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
+
+RUN unzip awscli-bundle.zip
+
+RUN ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
+
+
+# RUN echo 'export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"' >> /etc/bash.bashrc
+RUN echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm' >> /etc/bash.bashrc
+
+RUN mkdir $NVM_DIR
+RUN chown jenkins $NVM_DIR
+
+RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl
+
+RUN chmod +x ./kubectl
+RUN mv ./kubectl /usr/local/bin
+
+RUN echo "alias ll='ls -al'" >> /etc/bash.bashrc
+
+RUN usermod -G docker jenkins
+
+
+USER jenkins
+
+RUN cd $JENKINS_HOME
+
+RUN echo $PWD $JENKINS_HOME
+
+## install NVM
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
+
+# install node and npm
+RUN . $NVM_DIR/nvm.sh && \
+  nvm install $NODE_VERSION && \
+  nvm alias default 10

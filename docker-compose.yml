@@ -396,6 +396,31 @@ services:
       - DATA_SOURCE_NAME=exporter:exporter123456789@(mysql-server:3306)/
     restart: unless-stopped
 
+  jenkins-master:
+    image: jenkins/jenkins
+    container_name: jenkins-master
+    hostname: jenkins-master
+    networks:
+      dockernet:
+        ipv4_address: 192.168.254.230
+    ports:
+      - 127.0.0.1:8080:8080
+      - 127.0.0.1:5000:5000
+    volumes:
+      - ./jenkins_home:/var/jenkins_home
+    restart: unless-stopped
+
+  jenkins_build_mattermost:
+    image: jenkins/jenkins
+    container_name: jenkins
+    hostname: jenkins
+    networks:
+      dockernet:
+        ipv4_address: 192.168.254.231
+    ports:
+      - 127.0.0.1:8080:8080
+      - 127.0.0.1:5000:5000
+
 
   redis-svc:
     image: redis
