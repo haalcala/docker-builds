@@ -33,6 +33,18 @@ services:
       retries: 120
     restart: unless-stopped
 
+  jupyter-notebook:
+    # image: ubuntu_jupyter
+    build: ./jupyter_home/build
+    container_name: jupyter-notebook
+    hostname: jupyter-notebook
+    restart: unless-stopped
+    ports:
+      - "10000:8888"
+    networks:
+      - dockernet
+    volumes:
+      - ./jupyter_home:/home/jupyter-notebook
 
   portainer:
     # image: portainer/portainer-ce:2.11.1
