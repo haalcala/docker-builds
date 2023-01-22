@@ -35,16 +35,16 @@ services:
 
   jupyter-notebook:
     # image: ubuntu_jupyter
-    build: ./jupyter_home/build
+    build: ./jupyter_notebook/build
     container_name: jupyter-notebook
     hostname: jupyter-notebook
-    restart: unless-stopped
     ports:
       - "10000:8888"
     networks:
       - dockernet
     volumes:
-      - ./jupyter_home:/home/jupyter-notebook
+      - ${HOME}/jupyter_home:/home/jupyter-notebook
+    restart: unless-stopped
 
   portainer:
     # image: portainer/portainer-ce:2.11.1
@@ -52,16 +52,16 @@ services:
     container_name: portainer
     command: --admin-password-file=/app/portainer_password
     ports: 
-      - "9000:9000" 
-      - "9443:9443"
+      - "127.0.0.1:9000:9000" 
+      - "127.0.0.1:9443:9443"
     networks: 
       dockernet:
         ipv4_address: 192.168.254.107
-    restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./portainer_data:/data
+      - ${HOME}/portainer_data:/data
       - ./portainer:/app
+    restart: unless-stopped
 
 
   prometheus:
@@ -118,6 +118,7 @@ services:
       #- "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "./mattermost_logs:/mattermost_logs"
       - "./filebeat_logs:/var/log"
+    restart: unless-stopped
 
   filebeat_operator:
     build: ./filebeat_operator
@@ -407,19 +408,21 @@ services:
       - 127.0.0.1:8080:8080
       - 127.0.0.1:5000:5000
     volumes:
-      - ./jenkins_home:/var/jenkins_home
+      - ${HOME}/jenkins-master_home:/var/jenkins_home
     restart: unless-stopped
 
-  jenkins_build_mattermost:
-    image: jenkins/jenkins
-    container_name: jenkins
-    hostname: jenkins
+  jenkins-agent:
+    # image: jenkins/jenkins
+    build: ./jenkins-agent
+    container_name: jenkins-agent
+    hostname: jenkins-agent
     networks:
       dockernet:
         ipv4_address: 192.168.254.231
-    ports:
-      - 127.0.0.1:8080:8080
-      - 127.0.0.1:5000:5000
+    # ports:
+    #   - 127.0.0.1:8080:8080
+    #   - 127.0.0.1:5000:5000
+    restart: unless-stopped
 
 
   redis-svc:

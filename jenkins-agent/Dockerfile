@@ -1,26 +1,56 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
 LABEL maintainer="Harold Alcala <harold.dev@gmail.com>"
 
-# Make sure the package repository is up to date.
-RUN apt-get update && \
-    apt-get -qy full-upgrade && \
-    apt-get install -qy git && \
-# Install a basic SSH server
-    apt-get install -qy openssh-server && \
-    sed -i 's|session    required     pam_loginuid.so|session    optional     pam_loginuid.so|g' /etc/pam.d/sshd && \
+ENV TZ=Asia/Singapore
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+RUN apt-get update; apt-get upgrade -y; apt-get install -y docker.io \
+        python3.8 \
+        python3-pip \
+        libpython3.8-dev \
+        net-tools \
+        vim \
+        curl \
+        build-essential \
+        libssl-dev \
+        libffi-dev \
+        python3-dev \
+        git \
+        openssh-server \
+        unzip \
+        docker.io \
+        jq
+
+RUN pip3 install pip --upgrade
+
+ENV GO_VERSION 1.18.10
+
+RUN wget https://dl.google.com/go/go$GO_VERSION.linux-amd64.tar.gz
+
+RUN tar -C /usr/local -xzf go$GO_VERSION.linux-amd64.tar.gz
+
+RUN echo 'export PATH=$PATH:/usr/local/go/bin' >> /etc/bash.bashrc
+
+RUN curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+
+RUN mv /tmp/eksctl /usr/local/bin
+
+RUN curl https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o awscliv2.zip
+RUN unzip -o awscliv2.zip
+RUN ./aws/install
+
+RUN apt-get install -y openjdk-8-jdk maven
+
+RUN sed -i 's|session    required     pam_loginuid.so|session    optional     pam_loginuid.so|g' /etc/pam.d/sshd && \
     mkdir -p /var/run/sshd && \
-# Install JDK 8 (latest stable edition at 2019-04-01)
-    apt-get install -qy openjdk-8-jdk && \
-# Install maven
-    apt-get install -qy maven && \
-# Cleanup old packages
-    apt-get -qy autoremove && \
+    apt-get -qy autoremove
+
+RUN groupadd jenkins -g 1001
+RUN useradd -rm -d /home/jenkins -s /bin/bash -g jenkins -G jenkins -u 1001 jenkins
+
 # Add user jenkins to the image
-    adduser --quiet jenkins && \
-# Set password for the jenkins user (you may want to alter this).
-    echo "jenkins:jenkins" | chpasswd && \
-    mkdir /home/jenkins/.m2
+RUN mkdir /home/jenkins/.m2
 
 #ADD settings.xml /home/jenkins/.m2/
 # Copy authorized keys

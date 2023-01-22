@@ -1,9 +1,11 @@
-FROM ubuntu:20.04
+FROM jenkins/jenkins
 
 ENV NVM_DIR /opt/.nvm
 ENV NODE_VERSION 10.19.0
 ENV HOME /var/jenkins_home
 ENV JENKINS_HOME /var/jenkins_home
+
+ENV GO_VERSION 1.18.10
 
 RUN echo NVM_DIR $NVM_DIR
 
@@ -50,9 +52,9 @@ RUN apt-get update
 RUN apt-get install -y docker-ce docker-ce-cli containerd.io
 
 
-RUN wget https://dl.google.com/go/go1.13.8.linux-amd64.tar.gz
+RUN wget https://dl.google.com/go/go$GO_VERSION.linux-amd64.tar.gz
 
-RUN tar -C /usr/local -xzf go1.13.8.linux-amd64.tar.gz
+RUN tar -C /usr/local -xzf go$GO_VERSION.linux-amd64.tar.gz
 
 RUN echo 'export PATH=$PATH:/usr/local/go/bin' >> /etc/bash.bashrc
 
