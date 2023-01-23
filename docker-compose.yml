@@ -417,6 +417,8 @@ services:
     build: ./jenkins-agent
     container_name: jenkins-agent
     hostname: jenkins-agent
+    volumes:
+      - ${HOME}/jenkins-master_home/.ssh:/home/jenkins/.ssh
     networks:
       dockernet:
         ipv4_address: 192.168.254.231
