@@ -6,10 +6,10 @@ echo HOME $HOME
 
 cd $HOME/.ssh
 
-if [ ! -e "id_rsa" ]; then
-    ssh-keygen -t rsa -P "" -f $HOME/.ssh/id_rsa -C "The access key for Jenkins slaves"
+if [ ! -e "id_rsa-jenkins-agent" ]; then
+    ssh-keygen -t rsa -P "" -f $HOME/.ssh/id_rsa-jenkins-agent -C "The access key for Jenkins slaves"
 
-    cat id_rsa.pub >> authorized_keys
+    cat id_rsa-jenkins-agent.pub >> authorized_keys
 fi
 
 export PATH="$PATH:/opt/java/openjdk/bin"
