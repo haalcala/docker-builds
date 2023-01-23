@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/bin/bash -x
 
-set +x
+echo HOME $HOME
 
 [ ! -e "$HOME/.ssh" ] && mkdir $HOME/.ssh
 
@@ -19,4 +19,4 @@ echo PATH: $PATH
 
 # sleep Infinity
 
-bash -l /usr/local/bin/jenkins.sh
+/usr/local/bin/jenkins.sh

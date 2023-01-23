@@ -398,7 +398,8 @@ services:
     restart: unless-stopped
 
   jenkins-master:
-    image: jenkins/jenkins
+    # image: jenkins/jenkins
+    build: ./jenkins/build
     container_name: jenkins-master
     hostname: jenkins-master
     networks:
