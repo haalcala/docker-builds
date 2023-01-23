@@ -1,5 +1,9 @@
 FROM jenkins/jenkins:lts-jdk11
 
+# set timezone
+ENV TZ=Asia/Singapore
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
 USER root
 
 # RUN apt-get update; apt-get upgrade -y

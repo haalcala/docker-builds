@@ -419,6 +419,8 @@ services:
     hostname: jenkins-agent
     volumes:
       - ${HOME}/jenkins-master_home/.ssh:/home/jenkins/.ssh
+      - ${HOME}/.aws:/home/jenkins/.aws
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       dockernet:
         ipv4_address: 192.168.254.231
