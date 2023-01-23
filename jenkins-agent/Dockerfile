@@ -51,18 +51,18 @@ RUN sed -i 's|session    required     pam_loginuid.so|session    optional     pa
     mkdir -p /var/run/sshd && \
     apt-get -qy autoremove
 
-RUN groupadd jenkins -g 1001
-RUN useradd -rm -d /home/jenkins -s /bin/bash -g jenkins -G jenkins -u 1001 jenkins
+RUN groupadd jenkins -g 1000
+RUN useradd -rm -d /home/jenkins -s /bin/bash -g jenkins -G jenkins -u 1000 jenkins
 
 # Add user jenkins to the image
 RUN mkdir /home/jenkins/.m2
 
 #ADD settings.xml /home/jenkins/.m2/
 # Copy authorized keys
-COPY .ssh/authorized_keys /home/jenkins/.ssh/authorized_keys
+# COPY .ssh/authorized_keys /home/jenkins/.ssh/authorized_keys
 
-RUN chown -R jenkins:jenkins /home/jenkins/.m2/ && \
-    chown -R jenkins:jenkins /home/jenkins/.ssh/
+# RUN chown -R jenkins:jenkins /home/jenkins/.m2/ && \
+#     chown -R jenkins:jenkins /home/jenkins/.ssh/
 
 WORKDIR /home/jenkins
 
