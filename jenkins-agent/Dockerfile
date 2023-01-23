@@ -22,6 +22,11 @@ RUN apt-get update; apt-get upgrade -y; apt-get install -y docker.io \
         docker.io \
         jq
 
+# RUN rm /etc/ssh/ssh_host_*
+RUN dpkg-reconfigure openssh-server
+RUN ssh-keygen -A
+# RUN service start openssh-server
+
 RUN pip3 install pip --upgrade
 
 ENV GO_VERSION 1.18.10
@@ -61,12 +66,12 @@ RUN chown -R jenkins:jenkins /home/jenkins/.m2/ && \
 
 WORKDIR /home/jenkins
 
-COPY ./start.sh .
+# COPY ./start.sh .
 
-USER jenkins
+# USER jenkins
 
 # Standard SSH port
 EXPOSE 22
 
-# CMD ["/usr/sbin/sshd", "-D"]
-CMD ["bash", "-l", "./start.sh"]
+CMD ["/usr/sbin/sshd", "-D"]
+# CMD ["bash", "-l", "./start.sh"]
