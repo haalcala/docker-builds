@@ -167,7 +167,7 @@ services:
     image: python:3.10
     volumes:
       - ./grafana:/app
-      - ./data/.env:/app/.env
+      - ./.env:/app/.env
     networks: 
       dockernet:
         ipv4_address: 192.168.254.109
@@ -238,6 +238,7 @@ services:
 
 
   cadvisor:
+    # image: gcr.io/cadvisor/cadvisor
     image: google/cadvisor:latest
     container_name: cadvisor
     # ports:
