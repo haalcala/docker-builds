@@ -70,7 +70,7 @@ services:
     container_name: prometheus
     hostname: prometheus
     ports:
-      - "9090:9090"
+      - "127.0.0.1:9090:9090"
     networks: 
       dockernet:
         ipv4_address: 192.168.254.105
