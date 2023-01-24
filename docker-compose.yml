@@ -145,7 +145,7 @@ services:
     container_name: grafana
     hostname: grafana
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     networks: 
       dockernet:
         ipv4_address: 192.168.254.104
