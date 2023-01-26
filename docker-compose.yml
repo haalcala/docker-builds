@@ -53,6 +53,7 @@ services:
     command: --admin-password-file=/app/portainer_password
     ports: 
       - "127.0.0.1:9000:9000" 
+      - "127.0.0.1:8000:8000" 
       - "127.0.0.1:9443:9443"
     networks: 
       dockernet:
