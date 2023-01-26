@@ -1,4 +1,4 @@
-FROM jenkins/jenkins:lts-jdk11
+FROM jenkins/jenkins:2.375.2-jdk11
 
 # set timezone
 ENV TZ=Asia/Singapore
@@ -10,6 +10,8 @@ USER root
 
 USER jenkins
 WORKDIR /home/jenkins
+
+RUN jenkins-plugin-cli --plugins "blueocean:1.25.3 docker-workflow:1.28"
 
 ENV PATH $PATH
 
