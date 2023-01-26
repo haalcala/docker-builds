@@ -1,0 +1,34 @@
+{
+    "orgId": 1,
+    "uid": "prometheus2192",
+    "name": "Prometheus",
+    "type": "prometheus",
+    "typeLogoUrl": "",
+    "access": "proxy",
+    "url": "http://prometheus:9090",
+    "user": "",
+    "database": "",
+    "basicAuth": false,
+    "basicAuthUser": "",
+    "withCredentials": false,
+    "isDefault": true,
+    "jsonData": {
+        "httpMethod": "POST"
+    },
+    "secureJsonFields": {},
+    "version": 1,
+    "readOnly": false,
+    "accessControl": {
+        "alert.instances.external:read": true,
+        "alert.instances.external:write": true,
+        "alert.notifications.external:read": true,
+        "alert.notifications.external:write": true,
+        "alert.rules.external:read": true,
+        "alert.rules.external:write": true,
+        "datasources.id:read": true,
+        "datasources:delete": true,
+        "datasources:query": true,
+        "datasources:read": true,
+        "datasources:write": true
+    }
+}

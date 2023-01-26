@@ -71,7 +71,7 @@ services:
     container_name: prometheus
     hostname: prometheus
     ports:
-      - "9090:9090"
+      - "127.0.0.1:9090:9090"
     networks: 
       dockernet:
         ipv4_address: 192.168.254.105
@@ -146,7 +146,7 @@ services:
     container_name: grafana
     hostname: grafana
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     networks: 
       dockernet:
         ipv4_address: 192.168.254.104
@@ -168,7 +168,7 @@ services:
     image: python:3.10
     volumes:
       - ./grafana:/app
-      - ./data/.env:/app/.env
+      - ./.env:/app/.env
     networks: 
       dockernet:
         ipv4_address: 192.168.254.109
@@ -239,6 +239,7 @@ services:
 
 
   cadvisor:
+    # image: gcr.io/cadvisor/cadvisor
     image: google/cadvisor:latest
     container_name: cadvisor
     # ports:

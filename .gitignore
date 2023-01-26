@@ -1,2 +1,4 @@
 mysql_data
 mongodb_data
+.env
+grafana-data

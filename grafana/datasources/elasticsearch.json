@@ -1,0 +1,30 @@
+{
+    "orgId": 1,
+    "name":"Elasticsearch",
+    "uid": "elasticsearch2192",
+    "type": "elasticsearch",
+    "typeLogoUrl": "",
+    "access": "proxy",
+    "url": "http://es01:9200",
+    "password": "",
+    "user": "",
+    "database": "[mattermost-log-]YYYY.MM.DD-*",
+    "basicAuth": false,
+    "basicAuthUser": "admin",
+    "basicAuthPassword": "",
+    "withCredentials": false,
+    "isDefault": false,
+    "jsonData": {
+        "esVersion": "7.10.0",
+        "includeFrozen": false,
+        "interval": "Daily",
+        "logLevelField": "",
+        "logMessageField": "",
+        "maxConcurrentShardRequests": 5,
+        "timeField": "@timestamp"
+    },
+    "secureJsonFields": {
+        "basicAuthPassword": true
+    },
+    "readOnly": false
+}
