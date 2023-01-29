@@ -12,7 +12,7 @@ services:
     image: nginx
     container_name: nginx
     ports:
-      - "18080:80"
+      - "127.0.0.1:18080:80"
     networks:
       dockernet:
         ipv4_address: 192.168.254.209
@@ -79,7 +79,7 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - ./prometheus:/etc/prometheus
-      - prometheus-data:/prometheus
+      - ${HOME}/prometheus-data:/prometheus
     restart: unless-stopped
 
   prometheus_operator:
@@ -151,7 +151,7 @@ services:
       dockernet:
         ipv4_address: 192.168.254.104
     volumes:
-      - ./grafana-data:/var/lib/grafana
+      - ${HOME}/grafana-data:/var/lib/grafana
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_USER}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASS}
@@ -258,6 +258,15 @@ services:
     privileged: true
     restart: unless-stopped
 
+  zipkin:
+    image: openzipkin/zipkin
+    hostname: zipkin
+    container_name: zipkin
+    networks:
+      dockernet:
+        ipv4_address: 192.168.254.101
+    ports:
+      - "127.0.0.1:9411:9411"
 
   jaeger-collector:
     depends_on:
@@ -266,10 +275,10 @@ services:
     image: jaegertracing/jaeger-collector:1.36
     container_name: jaeger-collector
     ports:
-      - "9411:9411"
-      - "14250:14250"
-      - "14268:14268"
-      - "14269:14269"
+      - "127.0.0.1:9411:9411"
+      - "127.0.0.1:14250:14250"
+      - "127.0.0.1:14268:14268"
+      - "127.0.0.1:14269:14269"
     networks:
       dockernet:
         ipv4_address: 192.168.254.212
@@ -289,9 +298,9 @@ services:
     image: jaegertracing/jaeger-query:1.36
     container_name: jaeger-query
     ports:
-      - "16685:16685"
-      - "16686:16686"
-      - "16687:16687"
+      - "127.0.0.1:16685:16685"
+      - "127.0.0.1:16686:16686"
+      - "127.0.0.1:16687:16687"
     networks:
       dockernet:
         ipv4_address: 192.168.254.213
@@ -329,7 +338,7 @@ services:
       - ELASTIC_PASSWORD=changeme2192
       - cluster.name=my-es-cluster
     volumes:
-      - ./elasticsearch_data:/usr/share/elasticsearch/data
+      - ${HOME}/elasticsearch_data:/usr/share/elasticsearch/data
     networks:
       dockernet:
         ipv4_address: 192.168.254.211
@@ -358,7 +367,7 @@ services:
     environment:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
     volumes:
-      - ./mysql_data:/var/lib/mysql
+      - ${HOME}/mysql_data:/var/lib/mysql
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
@@ -380,7 +389,7 @@ services:
     ports:
       - "127.0.0.1:27017:27017"
     volumes:
-      - ./mongodb_data:/data/db
+      - ${HOME}/mongodb_data:/data/db
     # healthcheck:
     #   test: bash -c '[ $$(netstat -an | grep LIST | grep tcp | grep "27017 " | wc -l) -gt 0 ] && echo "healthy" || exit 1'
     #   interval: 10s
