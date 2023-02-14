@@ -13,6 +13,8 @@ import json
 import os
 import copy
 
+import real_json
+
 import subprocess
 
 from time import sleep
@@ -51,7 +53,7 @@ class OperatedConfig:
     def LoadFromFile(self, config_file):
         try:
             with open(config_file) as file:
-                self.config = GetWrappedJson(yaml.load(file, Loader=yaml.FullLoader))
+                self.config = real_json.ify(yaml.load(file, Loader=yaml.FullLoader))
                 self.clusters = self.config["static_resources"]["clusters"]
                 # print(self.config)
         except Exception as e:
@@ -62,7 +64,7 @@ class OperatedConfig:
     def LoadFromDict(self, dict_config):
         # print("dict_config:", dict_config, "type(dict_config):", type(dict_config))
         # print("dict_config.__dict__[\"_data\"]:", dict_config.__dict__["_data"])
-        self.clusters = GetWrappedJson(copy.deepcopy(dict_config.__dict__["_data"])["clusters"])
+        self.clusters = real_json.ify(copy.deepcopy(dict_config.__dict__["_data"])["clusters"])
         return self
 
     def __str__(self):
@@ -71,19 +73,19 @@ class OperatedConfig:
 
 class OperatorConfig:
     def __init__(self) -> None:
-        self.aws_block = GetWrappedJson({})
-        self.credentials = GetWrappedJson({})
+        self.aws_block = real_json.ify({})
+        self.credentials = real_json.ify({})
         self.region = ""
         self.output_file = ""
         self.container_name = ""
         self.aws_access_key_id = ""
         self.aws_secret_access_key = ""
-        self.config = GetWrappedJson({})
+        self.config = real_json.ify({})
 
     def load(self, dev=False):
-        config = GetWrappedJson({})
+        config = real_json.ify({})
         with open(("test-" if dev else "") + 'config.yml') as file:
-            config = GetWrappedJson(yaml.load(file, Loader=yaml.FullLoader))
+            config = real_json.ify(yaml.load(file, Loader=yaml.FullLoader))
             # print("1111 config:", config, "type(config):", type(config))
 
             # sort_file = yaml.dump(config["envoyproxy"]["base_cluster_config"], sort_keys=True)
@@ -278,7 +280,7 @@ def filter_targetgroups(targetgroups, filter):
                 if targetgroup[key] != value:
                     include = False
                     break
-            elif isinstance(value, (GetWrappedJson, dict)) and 'regex' in value:
+            elif isinstance(value, (real_json.GetWrappedJson, dict)) and 'regex' in value:
                 regex = value['regex']
                 if not re.match(regex, targetgroup[key]):
                     include = False
@@ -320,7 +322,7 @@ def main(args):
         elb = session.client('elbv2', region)
         ec2 = session.client('ec2', region)
 
-        tgs = GetWrappedJson(elb.describe_target_groups())
+        tgs = real_json.ify(elb.describe_target_groups())
         tgs = filter_targetgroups(tgs.TargetGroups, config.config.aws.target.resources[0].conditions[0])
         # print("type(tgs.TargetGroups):", type(tgs.TargetGroups))
 
@@ -340,7 +342,7 @@ def main(args):
 
         new_config = {}
 
-        describe_tags_ret = GetWrappedJson(
+        describe_tags_ret = real_json.ify(
             elb.describe_tags(ResourceArns=TargetGroupArns))
 
         # print("describe_tags_ret:", describe_tags_ret)
@@ -362,13 +364,13 @@ def main(args):
                 if not tag_config.enabled:
                     continue
 
-                health = GetWrappedJson(elb.describe_target_health(
+                health = real_json.ify(elb.describe_target_health(
                     TargetGroupArn=desc.ResourceArn))
 
                 # print("health:", health)
 
                 for target in health.TargetHealthDescriptions:
-                    instances = GetWrappedJson(ec2.describe_instances(
+                    instances = real_json.ify(ec2.describe_instances(
                         InstanceIds=[target.Target.Id]))
 
                     for instance in instances.Reservations[0].Instances:
@@ -468,314 +470,6 @@ def main(args):
 
         the_thread.join()
 
-class GetWrappedJson:
-    def __init__(self, data):
-        self._data = data
-    
-    def __getattr__(self, name):
-        # print(f"Getting attribute {name}")
-
-        if isinstance(self._data, dict) and name in self._data:
-            value = self._data[name]
-            if isinstance(value, (dict, list)):
-                return GetWrappedJson(value)
-            return value
-        elif isinstance(self._data, dict):
-            if name in dir(dict):
-                return getattr(self._data, name)
-            return None
-        elif isinstance(self._data, list):
-            if name == "append":
-                def wrapped_append(kw):
-                    if isinstance(kw, GetWrappedJson):
-                        self._data.append(kw._data)
-                    else:
-                        self._data.append(kw)
-                return wrapped_append
-            if name in dir(list):
-                return getattr(self._data, name)
-            return None
-        return None
-
-    def __getitem__(self, name):
-        # print(f"Getting item {name}")
-        if isinstance(self._data, list) and isinstance(name, int) and 0 <= name < len(self._data):
-            value = self._data[name]
-            if isinstance(value, (dict, list)):
-                return GetWrappedJson(value)
-            return value
-        elif isinstance(self._data, dict) and name in self._data:
-            value = self._data[name]
-            if isinstance(value, (dict, list)):
-                return GetWrappedJson(value)
-            return value
-        return None
-
-    def __setattr__(self, name, value):
-        if name != "_data":
-            if isinstance(self._data, dict):
-                if isinstance(value, GetWrappedJson):
-                    self._data[name] = value._data
-                else:
-                    self._data[name] = value
-        else:
-            super().__setattr__(name, value)
-
-    def __setitem__(self, key, value):
-        if isinstance(self._data, list) and isinstance(key, int) and 0 <= key < len(self._data):
-            if isinstance(value, GetWrappedJson):
-                self._data[key] = value._data
-            else:
-                self._data[key] = value
-        elif isinstance(self._data, dict):
-            if isinstance(value, GetWrappedJson):
-                self._data[key] = value._data
-            else:
-                self._data[key] = value
-
-    def __len__(self):
-        return len(self._data)
-
-    def __iter__(self):
-        for value in self._data:
-            if isinstance(value, (dict, list)):
-                yield GetWrappedJson(value)
-            else:
-                yield value
-
-    def __str__(self):
-        return str(self._data)
-
-    def __repr__(self):
-        return repr(self._data)
-
-    def __bool__(self):
-        return bool(self._data)
-
-def test_get_wrapped_json():
-    data = {
-        "a": 1,
-        "b": 2,
-        "c": {
-            "d": 3,
-            "e": 4,
-        },
-        "f": [5, 6, 7],
-    }
-    wrapped = GetWrappedJson(data)
-
-    # Test attribute access
-    assert wrapped.a == 1
-    assert wrapped.b == 2
-    assert wrapped.c.d == 3
-    assert wrapped.c.e == 4
-    assert wrapped.f[0] == 5
-    assert wrapped.f[1] == 6
-    assert wrapped.f[2] == 7
-    assert wrapped.f[3] == None
-    assert wrapped.g == None
-    assert wrapped.c.f == None
-
-    # Test item access
-    assert wrapped["a"] == 1
-    assert wrapped["b"] == 2
-    assert wrapped["c"]["d"] == 3
-    assert wrapped["c"]["e"] == 4
-    assert wrapped["f"][0] == 5
-    assert wrapped["f"][1] == 6
-    assert wrapped["f"][2] == 7
-    assert wrapped["g"] == None
-    assert wrapped["c"]["f"] == None
-
-    # Test set attribute
-    wrapped.a = 10
-    assert wrapped.a == 10
-    wrapped.g = 20
-    assert wrapped.g == 20
-
-    # Test set item
-    wrapped["b"] = 20
-    assert wrapped["b"] == 20
-    wrapped["h"] = 30
-    assert wrapped["h"] == 30
-
-    # Test str and repr
-    assert str(wrapped) == str(data)
-    assert repr(wrapped) == repr(data)
-
-    # Test len
-    print("wrapped:", wrapped)
-    assert len(wrapped) == 6
-    assert len(wrapped.c) == 2
-    assert len(wrapped.f) == 3
-
-    # Test bool
-    assert bool(wrapped) == True
-    assert bool(wrapped.g) == True
-    assert bool(wrapped.c) == True
-    assert bool(wrapped.f)
-
-    data = {
-        "name": "John",
-        "age": 30,
-        "cars": [
-            {"model": "Ford", "year": 2020},
-            {"model": "BMW", "year": 2019}
-        ]
-    }
-
-    wrapped_data = GetWrappedJson(data)
-
-    # Accessing values using dot notation
-    print(wrapped_data.name)  # Output: "John"
-    print(wrapped_data.age)  # Output: 30
-    print(wrapped_data.cars)  # Output: [{"model": "Ford", "year": 2020}, {"model": "BMW", "year": 2019}]
-
-    # Accessing values using square brackets notation
-    print(wrapped_data['name'])  # Output: "John"
-    print(wrapped_data['age'])  # Output: 30
-    print(wrapped_data['cars'])  # Output: [{"model": "Ford", "year": 2020}, {"model": "BMW", "year": 2019}]
-
-    # Accessing values that are not present in the data
-    print(wrapped_data.address)  # Output: None
-    print(wrapped_data['address'])  # Output: None
-
-    # Accessing elements of the list using index notation
-    print(wrapped_data.cars[0])  # Output: {"model": "Ford", "year": 2020}
-    print(wrapped_data['cars'][0])  # Output: {"model": "Ford", "year": 2020}
-
-    # Accessing elements of the list using index notation
-    print(wrapped_data.cars[0].model)  # Output: "Ford"
-    print(wrapped_data['cars'][0]['model'])  # Output: "Ford"
-
-    # Accessing elements of the list using index notation
-    print(wrapped_data.cars[2])  # Output: None
-    print(wrapped_data['cars'][2])  # Output: None
-
-    # Accessing elements of the list using index notation
-    print(wrapped_data.cars[0].color)  # Output: None
-    print(wrapped_data['cars'][0]['color'])  # Output: None
-
-
-# config = GetWrappedJson({"name": "John", "age": 30, "aws": {"region": "us-east-1", "access_key": "abcdef"}})
-# print(config.aws)  # Output: {'region': 'us-east-1', 'access_key': 'abcdef'}
-# print(config["aws"])  # Output: {'region': 'us-east-1', 'access_key': 'abcdef'}
-
-# def GetWrappedJson(_json):
-#     _json = {} if _json is None else _json
-
-#     class CC:
-#         def __init__(self, data):
-#             self.data = data  # an iterable
-
-#         def __iter__(self):
-#             self.current_index = 0
-#             if type(self.data) == dict:
-#                 self.keys = list(self.data.keys())
-#             return self
-
-#         def __next__(self):
-#             #  print("self.current_index:", self.current_index, "self.data:", self.data, "self.keys:", self.keys, "type(self.data):", type(self.data))
-#             # print("self.current_index:", self.current_index, "self.keys:", self.keys, "type(self.data):", type(self.data))
-
-#             if type(self.data) == dict:
-#                 current_index = self.current_index
-
-#                 if current_index < len(self.keys):
-#                     self.current_index += 1
-#                     x = self.data[self.keys[current_index]]
-#                     return GetWrappedJson(x) if type(x) == dict else x
-#                 else:
-#                     raise StopIteration
-#             elif self.current_index < len(self.data):
-#                 x = self.data[self.current_index] if len(
-#                     self.data) > self.current_index else None
-#                 self.current_index += 1
-#                 return GetWrappedJson(x) if type(x) == dict else x
-#             raise StopIteration
-
-#     class WrappedJson:
-#         def __getitem__(self, __name):
-#             # print("__getitem__:", __name, type(_json))
-#             try:
-#                 if type(__name) == str and __name[-(len("__json")):] == "__json":
-#                     return _json
-
-#                 if type(__name) == str and __name == "keys" and type(_json) == dict:
-#                     return _json.keys
-
-#                 if type(__name) == str and __name == "append" and type(_json) == list:
-#                     return _json.append
-
-#                 ret = None
-
-#                 if type(_json) == list:
-#                     ret = _json[__name] if type(__name) == int and len(
-#                         _json) > __name else None
-#                 else:
-#                     ret = _json.get(__name)
-
-#                 return GetWrappedJson(ret) if type(ret) == dict or type(ret) == list else ret
-#             except Exception as e:
-#                 print("ERROR: e:", e, "__name", __name, "_json", _json)
-#                 logging.exception(e)
-#                 raise e
-
-#         def __getattribute__(self, __name: str):
-#             # print("__getattribute__:", __name, type(_json))
-#             try:
-#                 if type(__name) == str and __name[-(len("__json")):] == "__json":
-#                     return _json
-
-#                 if type(__name) == str and __name == "keys" and type(_json) == dict:
-#                     return _json.keys
-
-#                 if type(__name) == str and __name == "append" and type(_json) == list:
-#                     return _json.append
-
-#                 ret = None
-
-#                 if type(_json) == list:
-#                     ret = _json[__name] if type(__name) == int and len(
-#                         _json) > __name else None
-#                 else:
-#                     ret = _json.get(__name)
-
-#                 return GetWrappedJson(ret) if type(ret) == dict or type(ret) == list else ret
-#             except Exception as e:
-#                 print("ERROR: e:", e, "__name", __name, "_json", _json)
-#                 logging.exception(e)
-#                 raise e
-
-#         def __repr__(self) -> str:
-#             return str(_json)
-
-#         def __setitem__(self, __name: str, __value) -> None:
-#             _json[__name] = __value
-
-#         def __setattr__(self, __name: str, __value) -> None:
-#             _json[__name] = __value
-
-#         def __bool__(self):
-#             return not not _json
-
-#         def __delattr__(self, __name):
-#             if _json.get(__name):
-#                 del _json[__name]
-
-#         def __delitem__(self, __name):
-#             if _json.get(__name):
-#                 del _json[__name]
-
-#         def __iter__(self):
-#             return iter(CC(_json))
-
-#         def __len__(self):
-#             return len(_json)
-
-#     return WrappedJson()
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog='ProgramName',
@@ -792,8 +486,6 @@ if __name__ == "__main__":
 
     if args.dev:
         print("\n" * 100)
-
-    test_get_wrapped_json()
 
     print("args:", args)
 
