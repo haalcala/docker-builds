@@ -100,7 +100,8 @@ services:
 
 
   filebeat:
-    image: docker.elastic.co/beats/filebeat:7.8.1
+    # image: docker.elastic.co/beats/filebeat:7.8.1
+    build: ./filebeat
     hostname: filebeat
     container_name: filebeat
     networks:
