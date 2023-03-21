@@ -15,7 +15,7 @@ fi
 export PATH="$PATH:/opt/java/openjdk/bin"
 export JAVA_HOME="/opt/java/openjdk/bin"
 
-echo PATH: $PATH
+# echo PATH: $PATH
 
 # sleep Infinity
 

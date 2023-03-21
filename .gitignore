@@ -3,3 +3,8 @@ mongodb_data
 .env
 grafana-data
 vendor
+mysql_data
+mongodb_data
+.env
+grafana-data
+elasticsearch_data
